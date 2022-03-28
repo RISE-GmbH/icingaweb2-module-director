@@ -353,7 +353,7 @@ class IcingaServiceForm extends DirectorObjectForm
              ->groupMainProperties()
              ->addAssignmentElements()
              ->addCheckCommandElements($forceCommandElements)
-             ->addCheckExecutionElements()
+             ->addCheckExecutionElements(true)
              ->addExtraInfoElements()
              ->addAgentAndZoneElements()
              ->setButtons();
