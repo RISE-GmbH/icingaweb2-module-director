@@ -353,7 +353,7 @@ class IcingaServiceForm extends DirectorObjectForm
              ->groupMainProperties()
              ->addAssignmentElements()
              ->addCheckCommandElements($forceCommandElements)
-             ->addCheckExecutionElements()
+             ->addCheckExecutionElements($forceCommandElements)
              ->addExtraInfoElements()
              ->addAgentAndZoneElements()
              ->setButtons();
@@ -475,6 +475,7 @@ class IcingaServiceForm extends DirectorObjectForm
      */
     protected function setupHostRelatedElements()
     {
+        $forceCommandElements = false;
         $this->addHidden('host', $this->host->getObjectName());
         $this->addHidden('object_type', 'object');
         $this->addImportsElement();
@@ -488,13 +489,16 @@ class IcingaServiceForm extends DirectorObjectForm
             $this->groupMainProperties();
             return;
         }
-
+        if ($this->hasPermission('director/admin')) {
+            $forceCommandElements = true;
+        }
         $this->addNameElement()
              ->addChoices('service')
              ->addDisabledElement()
              ->addGroupsElement()
              ->groupMainProperties()
              ->addCheckCommandElements()
+             ->addCheckExecutionElements($forceCommandElements)
              ->addExtraInfoElements()
              ->setButtons();
 
