@@ -21,11 +21,14 @@ class ActivityLogTable extends ZfQueryBasedTable
 
     protected $hasObjectFilter = false;
 
-    protected $searchColumns = [
+    protected $searchColumns = array(
         'author',
         'object_name',
         'object_type',
-    ];
+        'action',
+        'old_properties',
+        'new_properties'
+    );
 
     /** @var LocalTimeFormat */
     protected $timeFormat;
