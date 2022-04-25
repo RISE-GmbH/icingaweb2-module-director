@@ -224,6 +224,10 @@ class IcingaHost extends IcingaObject implements ExportInterface
         if (IcingaEndpoint::exists($name, $this->connection)) {
             return;
         }
+        
+        if($this->get('custom_endpoint_name') !== null ){
+            return;
+        }
 
         $props = array(
             'object_name'  => $name,
