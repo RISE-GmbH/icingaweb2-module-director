@@ -307,14 +307,18 @@ class DirectorDatafield extends DbObjectWithSettings
 
     protected function eventuallyGetResolvedCommandVar(IcingaObject $object, $varName)
     {
-        if (! $object->hasRelation('check_command')) {
+        if ($object->hasRelation('check_command')) {
+            $command_ref='check_command';
+        }elseif ($object->hasRelation('command')) {
+            $command_ref='command';
+        }else{
             return null;
         }
 
         // TODO: Move all of this elsewhere and test it
         try {
             /** @var IcingaCommand $command */
-            $command = $object->getResolvedRelated('check_command');
+            $command = $object->getResolvedRelated($command_ref);
             if ($command === null) {
                 return null;
             }
