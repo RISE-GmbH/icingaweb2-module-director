@@ -26,6 +26,9 @@ class ActivityLogTable extends ZfQueryBasedTable
         'author',
         'object_name',
         'object_type',
+        'action',
+        'old_properties',
+        'new_properties'
     ];
 
     /** @var LocalTimeFormat */
