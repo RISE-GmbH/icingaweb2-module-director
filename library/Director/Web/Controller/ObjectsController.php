@@ -13,6 +13,7 @@ use Icinga\Module\Director\Forms\IcingaMultiEditForm;
 use Icinga\Module\Director\Objects\IcingaCommand;
 use Icinga\Module\Director\Objects\IcingaHost;
 use Icinga\Module\Director\Objects\IcingaObject;
+use Icinga\Module\Director\Objects\IcingaService;
 use Icinga\Module\Director\RestApi\IcingaObjectsHandler;
 use Icinga\Module\Director\Web\ActionBar\ObjectsActionBar;
 use Icinga\Module\Director\Web\ActionBar\TemplateActionBar;
@@ -85,7 +86,7 @@ abstract class ObjectsController extends ActionController
             $table->filterObjectType('apply');
         }
         $search = $this->params->get('q');
-        if (\strlen($search) > 0) {
+        if ($search !== null && \strlen($search) > 0) {
             $table->search($search);
         }
 
@@ -110,7 +111,7 @@ abstract class ObjectsController extends ActionController
         $type = $this->getType();
         if ($this->params->get('format') === 'json') {
             $filename = sprintf(
-                "director-${type}_%s.json",
+                "director-{$type}_%s.json",
                 date('YmdHis')
             );
             $this->getResponse()->setHeader('Content-disposition', "attachment; filename=$filename", true);
@@ -124,7 +125,7 @@ abstract class ObjectsController extends ActionController
             ->addTitle($this->translate(ucfirst($this->getPluralType())))
             ->actions(new ObjectsActionBar($this->getBaseObjectUrl(), $this->url()));
 
-        $this->content()->add(new BranchedObjectsHint($this->getBranch(), $this->Auth()));
+        $this->content()->add(new BranchedObjectsHint($this->getBranch(), $this->Auth(), $this->hasPreferredBranch()));
 
         if ($type === 'command' && $this->params->get('type') === 'external_object') {
             $this->tabs()->activate('external');
@@ -143,8 +144,7 @@ abstract class ObjectsController extends ActionController
      */
     protected function getTable()
     {
-        $table = ObjectsTable::create($this->getType(), $this->db())
-            ->setAuth($this->getAuth())
+        $table = ObjectsTable::create($this->getType(), $this->db(), $this->getAuth())
             ->setBranchUuid($this->getBranchUuid())
             ->setBaseObjectUrl($this->getBaseObjectUrl());
 
@@ -157,7 +157,7 @@ abstract class ObjectsController extends ActionController
      */
     protected function getApplyRulesTable()
     {
-        $table = new ApplyRulesTable($this->db());
+        $table = (new ApplyRulesTable($this->db()))->setBranch($this->getBranch());
         $table->setType($this->getType())
             ->setBaseObjectUrl($this->getBaseObjectUrl());
         $this->eventuallyFilterCommand($table);
@@ -235,7 +235,7 @@ abstract class ObjectsController extends ActionController
 
         if ($this->params->get('format') === 'json') {
             $filename = sprintf(
-                "director-${type}-templates_%s.json",
+                "director-{$type}-templates_%s.json",
                 date('YmdHis')
             );
             $this->getResponse()->setHeader('Content-disposition', "attachment; filename=$filename", true);
@@ -290,7 +290,7 @@ abstract class ObjectsController extends ActionController
 
         if ($this->params->get('format') === 'json') {
             $filename = sprintf(
-                "director-${type}-applyrules_%s.json",
+                "director-{$type}-applyrules_%s.json",
                 date('YmdHis')
             );
             $this->getResponse()->setHeader('Content-disposition', "attachment; filename=$filename", true);
@@ -313,7 +313,7 @@ abstract class ObjectsController extends ActionController
             ->add(
                 Link::create(
                     $this->translate('Add'),
-                    "${baseUrl}/add",
+                    "{$baseUrl}/add",
                     ['type' => 'apply'],
                     [
                         'title' => sprintf(
@@ -354,7 +354,7 @@ abstract class ObjectsController extends ActionController
         $this->actions()->add(
             Link::create(
                 $this->translate('Add'),
-                "director/${type}set/add",
+                "director/{$type}set/add",
                 null,
                 [
                     'title' => sprintf(
@@ -367,7 +367,9 @@ abstract class ObjectsController extends ActionController
             )
         );
 
-        ObjectSetTable::create($type, $this->db(), $this->getAuth())->renderTo($this);
+        ObjectSetTable::create($type, $this->db(), $this->getAuth())
+            ->setBranch($this->getBranch())
+            ->renderTo($this);
     }
 
     /**
@@ -407,7 +409,12 @@ abstract class ObjectsController extends ActionController
                         $objects[$name] = $class::load($name, $db);
                     } elseif ($col === 'uuid') {
                         $object = $store->load($table, Uuid::fromString($ex->getExpression()));
-                        $objects[$object->getObjectName()] = $object;
+                        if ($object instanceof IcingaService) {
+                            $host = $object->getRelated('host');
+                            $objects[$host->getObjectName() . ': ' . $object->getObjectName()] = $object;
+                        } else {
+                            $objects[$object->getObjectName()] = $object;
+                        }
                     } else {
                         throw new InvalidArgumentException("'$col' is no a valid key component for '$type'");
                     }
